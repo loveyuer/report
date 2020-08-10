@@ -85,7 +85,7 @@ export default {
       display: flex;
     }
     .van-cell {
-      padding: 10px 0;
+      padding: 5px 0;
       background-color: #f6f2f2;
       margin: 10px 0;
       border-radius: 30px;

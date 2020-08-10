@@ -7,7 +7,8 @@ const routes = [
   {
     name: "index",
     component: () => import("../pages/index.vue"),
-    path: "/orderForm/overview",
+    path: "/",
+    redirect: '/orderForm/overview',
     meta: {
       title: "定单-数据概览",
     },

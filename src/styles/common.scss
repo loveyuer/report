@@ -19,6 +19,9 @@
   .font12 {
     font-size: 12px;
   }
+  .font16{
+    font-size: 16px;
+  }
   .bold{
       font-weight: bold;
   }
@@ -33,5 +36,8 @@
   }
   .wrap{
     word-wrap: break-word;
+  }
+  .van-overlay{
+    z-index: 3;
   }
 }

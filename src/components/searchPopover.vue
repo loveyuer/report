@@ -10,10 +10,34 @@
         <div class="filter-wrap">
           <label>时间</label>
           <div class="tag-wrap">
-            <van-tag type="primary" plain size="large">今日</van-tag>
-            <van-tag type="primary" plain size="large">昨日</van-tag>
-            <van-tag type="primary" plain size="large">近3天</van-tag>
-            <van-tag type="primary" plain size="large">近一周</van-tag>
+            <van-tag
+              type="primary"
+              plain
+              size="large"
+              @click="chooseDate('today')"
+              >今日</van-tag
+            >
+            <van-tag
+              type="primary"
+              plain
+              size="large"
+              @click="chooseDate('yestoday')"
+              >昨日</van-tag
+            >
+            <van-tag
+              type="primary"
+              plain
+              size="large"
+              @click="chooseDate('three')"
+              >近3天</van-tag
+            >
+            <van-tag
+              type="primary"
+              plain
+              size="large"
+              @click="chooseDate('week')"
+              >近一周</van-tag
+            >
           </div>
           <div style="margin: 0 -16px">
             <van-field
@@ -33,6 +57,9 @@
               <van-datetime-picker
                 type="date"
                 title="选择年月日"
+                v-model="currentDate"
+                :min-date="startMinDate"
+                :max-date="startMaxDate"
                 @confirm="confirmStart"
                 @cancle="startDatePicker = false"
               />
@@ -54,13 +81,16 @@
               <van-datetime-picker
                 title="选择年月日"
                 type="date"
+                v-model="currentDate"
+                :min-date="endMinDate"
+                :max-date="endMaxDate"
                 @confirm="confirmEnd"
                 @cancle="endDatePicker = false"
               />
             </van-popup>
           </div>
         </div>
-        <div class="filter-wrap">
+        <!-- <div class="filter-wrap">
           <label>类型</label>
           <div class="tag-wrap">
             <van-tag type="primary" plain size="large">全部</van-tag>
@@ -69,10 +99,12 @@
             <van-tag type="primary" plain size="large">样机</van-tag>
             <van-tag type="primary" plain size="large">散件</van-tag>
           </div>
-        </div>
+        </div> -->
         <div class="btn-wrapper">
-          <van-button type="info" size="small">确定</van-button>
-          <van-button type="info" size="small">重置</van-button>
+          <van-button type="info" size="small" @click="confirm"
+            >确定</van-button
+          >
+          <van-button type="info" size="small" @click="reset">重置</van-button>
         </div>
       </div>
     </van-popup>
@@ -88,6 +120,7 @@ export default {
     },
   },
   computed: {
+    // 检索条件是否可见
     visible: {
       get() {
         return this.show;
@@ -96,17 +129,36 @@ export default {
         this.closePopover();
       },
     },
+    startMinDate() {
+      const date = this.$moment(this.endDate).subtract("days", 30);
+      const { year, month, day } = this.formatter(date);
+      return new Date(year, month, day);
+    },
+    startMaxDate() {
+      const { year, month, day } = this.formatter(this.endDate);
+      return new Date(year, month, day);
+    },
+    endMinDate() {
+      const { year, month, day } = this.formatter(this.startDate);
+      return new Date(year, month, day);
+    },
+    endMaxDate() {
+      const date = this.$moment(this.startDate).add("days", 30);
+      const { year, month, day } = this.formatter(date);
+      return new Date(year, month, day);
+    },
   },
   data() {
     return {
-      // 开始日期
-      startDate: "",
-      // 结束日期
-      endDate: "",
+      // 开始时间
+      startDate: this.$store.state.startDate,
+      // 结束时间
+      endDate: this.$store.state.endDate,
       // 开始日期选择框
       startDatePicker: false,
       // 结束日期选择框
       endDatePicker: false,
+      currentDate: new Date(),
     };
   },
   methods: {
@@ -116,20 +168,55 @@ export default {
     },
     // 开始日期选择
     confirmStart(val) {
-      this.startDate = this.format(val);
+      this.startDate = this.$moment(val).format("YYYY-MM-DD");
       this.startDatePicker = false;
     },
     // 结束日期选择
     confirmEnd(val) {
-      this.endDate = this.format(val);
+      this.endDate = this.$moment(val).format("YYYY-MM-DD");
       this.endDatePicker = false;
     },
+    // 确定选择
+    confirm() {
+      this.$store.commit("setStartDate", this.startDate);
+      this.$store.commit("setEndDate", this.endDate);
+      this.$store.commit("setSelectDateFlag");
+      this.closePopover();
+    },
+    // 重置日期
+    reset() {
+      this.startDate = this.$moment().format("YYYY-MM-DD");
+      this.endDate = this.$moment().format("YYYY-MM-DD");
+      this.confirm();
+    },
+    // 时间标签筛选
+    chooseDate(type) {
+      if (type === "today") {
+        this.startDate = this.$moment().format("YYYY-MM-DD");
+        this.endDate = this.$moment().format("YYYY-MM-DD");
+      } else if (type === 'yestoday') {
+        this.startDate = this.$moment().subtract("days", 1).format("YYYY-MM-DD");
+        this.endDate = this.$moment().subtract("days", 1).format("YYYY-MM-DD");
+      } else if (type === 'three') {
+        this.startDate = this.$moment().subtract("days", 2).format("YYYY-MM-DD");
+        this.endDate = this.$moment().format("YYYY-MM-DD");
+      } else if (type === 'week') {
+        this.startDate = this.$moment().subtract("days", 6).format("YYYY-MM-DD");
+        this.endDate = this.$moment().format("YYYY-MM-DD");
+      }
+      this.confirm();
+    },
     // 日期格式化
-    format(val) {
-      let year = val.getFullYear();
-      let month = val.getMonth() + 1;
-      let day = val.getDate();
-      return  `${year}-${month}-${day}`
+    formatter(value) {
+      const date = new Date(this.$moment(value).format("YYYY-MM-DD"));
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+      return {
+        year,
+        month,
+        day,
+      };
     },
   },
 };
@@ -138,21 +225,21 @@ export default {
 .van-tag {
   margin-right: 5px;
 }
-.filter-wrap{
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px;
-    .tag-wrap{
-        margin: 10px 0
-    }
+.filter-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px;
+  .tag-wrap {
+    margin: 10px 0;
+  }
 }
-.btn-wrapper{
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    .van-button{
-        width: 50%;
-    }
+.btn-wrapper {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  .van-button {
+    width: 50%;
+  }
 }
 </style>

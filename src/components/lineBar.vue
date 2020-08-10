@@ -1,5 +1,5 @@
 <template>
-  <div :id="id" style="height:300px;width:95%;margin: 15px auto"></div>
+  <div :id="id" style="height:300px;width:95%;margin: 15px auto 0"></div>
 </template>
 <script>
 import echarts from "echarts";

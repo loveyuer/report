@@ -1,13 +1,14 @@
 <template>
   <div class="data-view">
-    <p>{{ title }}</p>
-    <p class="bold">{{ count }}</p>
-    <p class="left">
-      {{countName}}: <span :class="diff > 0 ? 'red' : 'green'">{{ diff }}</span>
+    <p class="font12">{{ title }}</p>
+    <p class="bold font16">{{ count || "--" }}</p>
+    <p class="left font12">
+      {{ countName }}:
+      <span class="font12" :class="diff > 0 ? 'red' : 'green'">{{ diff || "--" }}</span>
     </p>
-    <p class="left">
-      {{percentName}}: 
-      <span :class="percent > 0 ? 'red' : 'green'">{{ percent }}%</span>
+    <p class="left font12">
+      {{ percentName }}:
+      <span class="font12" :class="percent > 0 ? 'red' : 'green'">{{ percent || "--" }}%</span>
     </p>
   </div>
 </template>
@@ -37,15 +38,18 @@ export default {
 </script>
 
 <style lang="scss">
-.data-view{
-  p{
+.data-view {
+  p {
     margin: 5px 0;
-    &.left{
+    &.left {
       text-align: left;
     }
   }
-  .van-grid-item__content--center{
-        background: linear-gradient(45deg, #ece9e6 0%,#ffffff 100% );
+  .van-grid-item__content{
+    padding: 16px 4px;
+  }
+  .van-grid-item__content--center {
+    background: linear-gradient(45deg, #ece9e6 0%, #ffffff 100%);
   }
 }
 </style>

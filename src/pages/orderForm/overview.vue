@@ -1,22 +1,56 @@
 <template>
   <div>
-    <header-TT></header-TT>
     <div class="data-view">
       <van-grid :column-num="3" :gutter="10">
         <van-grid-item>
-          <data-view :title="`当日计划`" :count="`1800`" :countName="`昨日`" :percentName="`同比`" :diff="+531" :percent="+20"></data-view>
+          <data-view
+            :title="`当日计划`"
+            :count="`${overviewData.factoryPlannedOutput}`"
+            :countName="`昨日`"
+            :percentName="`同比`"
+            :diff="overviewData.comparedToPlanYesterday"
+            :percent="overviewData.lastMonthPlanrate"
+          ></data-view>
         </van-grid-item>
         <van-grid-item>
-          <data-view :title="`当日完成`" :count="`1700`" :countName="`差异`" :percentName="`完成率`" :diff="-100" :percent="-94"></data-view>
+          <data-view
+            :title="`当日完成`"
+            :count="`${overviewData.factoryActualOutput}`"
+            :countName="`差异`"
+            :percentName="`完成率`"
+            :diff="overviewData.discrepancy"
+            :percent="overviewData.completeRate"
+          ></data-view>
         </van-grid-item>
         <van-grid-item>
-          <data-view :title="`工程不良`" :count="`120`" :countName="`昨日`" :percentName="`不良率`" :diff="+20" :percent="7"></data-view>
+          <data-view
+            :title="`工程不良`"
+            :count="`${overviewData.badSets}`"
+            :countName="`昨日`"
+            :percentName="`不良率`"
+            :diff="overviewData.comparedToQualityYesterday"
+            :percent="overviewData.defectiveRate"
+          ></data-view>
         </van-grid-item>
         <van-grid-item>
-          <data-view :title="`停机率`" :count="`3%`" :countName="`昨日`" :percentName="`同比`" :diff="+0.1" :percent="-0.2"></data-view>
+          <data-view
+            :title="`停机率`"
+            :count="`${overviewData.downtimerate}%`"
+            :countName="`昨日`"
+            :percentName="`同比`"
+            :diff="overviewData.comparedToDowntimeYesterday"
+            :percent="overviewData.lastMonthDowntimerate"
+          ></data-view>
         </van-grid-item>
         <van-grid-item>
-          <data-view :title="`当日计划`" :count="`13%`" :countName="`昨日`" :percentName="`同比`" :diff="+5" :percent="-0.2"></data-view>
+          <data-view
+            :title="`计划变更率`"
+            :count="`${overviewData.changeOfPlanRate}%`"
+            :countName="`昨日`"
+            :percentName="`同比`"
+            :diff="overviewData.comparedToChangeplanYesterday"
+            :percent="overviewData.lastMonthChangeplanRate"
+          ></data-view>
         </van-grid-item>
       </van-grid>
     </div>
@@ -28,75 +62,54 @@
 </template>
 
 <script>
-import HeaderTT from "../../components/headerTT.vue";
+import "../../store/index";
+import { orderOverview } from "../../api/index";
 import DataView from "../../components/countData.vue";
 import VList from "../../components/list.vue";
 import LineBar from "../../components/lineBar.vue";
 export default {
-  components: { HeaderTT, DataView, VList, LineBar },
+  components: { DataView, VList, LineBar },
   data() {
     return {
-      // 方格内数据
-      gridData: [
-        {
-          title: "当日计划",
-          count: "1800",
-          diff: "+531",
-          diffRate: "20%",
-        },
-        {
-          title: "当日完成",
-          count: "1700",
-          diff: "-100",
-          diffRate: "94%",
-        },
-        {
-          title: "工程不良",
-          count: "1700",
-          diff: "+20",
-          diffRate: "7%",
-        },
-        {
-          title: "停机率",
-          count: "3%",
-          diff: "+0.1%",
-          diffRate: "0.2%",
-        },
-        {
-          title: "计划变更率",
-          count: "13%",
-          diff: "+5%",
-          diffRate: "0.2%",
-        },
-      ],
+      // 概览数据
+      overviewData: {},
       // 表格标题
       title: "详情数据",
       // 表格列
-      cols: [{
-        title: '生产线',
-        dataIndex: 'productLine'
-      },{
-        title: '计划',
-        dataIndex: 'plan'
-      },{
-        title: '实际',
-        dataIndex: 'actrual'
-      },{
-        title: '差异',
-        dataIndex: 'diff'
-      },{
-        title: '不良数',
-        dataIndex: 'badCount'
-      },{
-        title: '不良率',
-        dataIndex: 'badRate'
-      },{
-        title: '停机时',
-        dataIndex: 'shutdownCount'
-      },{
-        title: '停机率',
-        dataIndex: 'shutdownRate'
-      },],
+      cols: [
+        {
+          title: "生产线",
+          dataIndex: "productLine",
+        },
+        {
+          title: "计划",
+          dataIndex: "plan",
+        },
+        {
+          title: "实际",
+          dataIndex: "actrual",
+        },
+        {
+          title: "差异",
+          dataIndex: "diff",
+        },
+        {
+          title: "不良数",
+          dataIndex: "badCount",
+        },
+        {
+          title: "不良率",
+          dataIndex: "badRate",
+        },
+        {
+          title: "停机时",
+          dataIndex: "shutdownCount",
+        },
+        {
+          title: "停机率",
+          dataIndex: "shutdownRate",
+        },
+      ],
       // 表格数据
       list: [
         {
@@ -398,6 +411,30 @@ export default {
         ],
       },
     };
+  },
+  created() {
+    this.getOverview();
+  },
+  computed: {
+    dateFlag() {
+      return this.$store.state.selectDateFlag;
+    }
+  },
+  watch: {
+    dateFlag() {
+      this.getOverview();
+    },
+  },
+  methods: {
+    getOverview() {
+      orderOverview({
+        factoryCode: "1007",
+        startDate: this.$store.state.startDate,
+        endDate: this.$store.state.endDate,
+      }).then((res) => {
+        this.overviewData = res.data.data;
+      });
+    },
   },
 };
 </script>

@@ -79,45 +79,6 @@ export default {
   components: { HeaderTT, DataView, LineBar, ListExpand },
   data() {
     return {
-      // 方格内数据
-      gridData: [
-        {
-          title: "当日计划",
-          count: "1800",
-          diff: "+500",
-          diffRate: "20%",
-        },
-        {
-          title: "当日完成",
-          count: "900",
-          diff: "-100",
-          diffRate: "50%",
-        },
-        {
-          title: "齐套率",
-          count: "90%",
-          diff: "+100",
-          diffRate: "7%",
-        },
-        {
-          title: "清单率",
-          count: "60%",
-          diff: "+98.5%",
-          diffRate: "2%",
-        },
-        {
-          title: "变更率",
-          count: "12%",
-          diff: "+9%",
-          diffRate: "7%",
-        },
-        {
-          title: "停机时",
-          count: "125分钟",
-          diff: "+38",
-          diffRate: "2%",
-        },
-      ],
       // 表格标题
       title: "详情数据",
       // 表格列
@@ -297,9 +258,6 @@ export default {
 .no-tab-container {
   .tt {
     margin-top: 35px;
-  }
-  .block {
-    top: 30%;
   }
 }
 </style>

@@ -1,11 +1,11 @@
 <template>
-  <div>
+  <div style="overflow: hidden">
     <div class="tt">
       <div>数据动态<van-icon name="replay" /></div>
       <div class="grey font12">数据更新时间: 10:31</div>
       <div class="grey font12">单位：台</div>
     </div>
-    <div class="grey font12 right" @click="show = true">
+    <div class="grey font12 right" @click="show = true" style="float: right">
       数据说明<van-icon name="info-o" />
     </div>
     <van-overlay :show="show" @click="show = false">
@@ -35,6 +35,9 @@ export default {
 </script>
 
 <style lang="scss">
+.tt{
+  margin-top: 5rem;
+}
 .wrapper {
   display: flex;
   height: 100%;
@@ -48,7 +51,7 @@ export default {
   border-radius: 5px;
   position: fixed;
   left: 8%;
-  top: 10%;
+  top: 30%;
   h1 {
     text-align: center;
     margin-bottom: 10px;
