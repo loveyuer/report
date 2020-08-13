@@ -19,7 +19,7 @@
             :countName="`差异`"
             :percentName="`完成率`"
             :diff="overviewData.discrepancy"
-            :percent="overviewData.completeRate"
+            :percent="parseFloat(overviewData.completeRate * 100)"
           ></data-view>
         </van-grid-item>
         <van-grid-item>
@@ -29,13 +29,15 @@
             :countName="`昨日`"
             :percentName="`不良率`"
             :diff="overviewData.comparedToQualityYesterday"
-            :percent="overviewData.defectiveRate"
+            :percent="parseFloat(overviewData.defectiveRate * 100)"
           ></data-view>
         </van-grid-item>
         <van-grid-item>
           <data-view
             :title="`停机率`"
-            :count="`${overviewData.downtimerate}%`"
+            :count="
+              `${parseFloat(overviewData.downtimerate * 100).toFixed(2)}%`
+            "
             :countName="`昨日`"
             :percentName="`同比`"
             :diff="overviewData.comparedToDowntimeYesterday"
@@ -45,7 +47,9 @@
         <van-grid-item>
           <data-view
             :title="`计划变更率`"
-            :count="`${overviewData.changeOfPlanRate}%`"
+            :count="
+              `${parseFloat(overviewData.changeOfPlanRate * 100).toFixed(2)}%`
+            "
             :countName="`昨日`"
             :percentName="`同比`"
             :diff="overviewData.comparedToChangeplanYesterday"
@@ -55,15 +59,27 @@
       </van-grid>
     </div>
     <v-list :title="title" :cols="cols" :list="list"></v-list>
-    <line-bar :id="dailyTrendId" :option="dailyTrendData"></line-bar>
-    <line-bar :id="shutdownTrendId" :option="shutdownTrendData"></line-bar>
-    <line-bar :id="planTrendId" :option="planTrendData"></line-bar>
+    <line-bar
+      :id="dailyTrendId"
+      :option="dailyTrendData"
+      :refresh="refreshDailyTrend"
+    ></line-bar>
+    <line-bar
+      :id="shutdownTrendId"
+      :option="shutdownTrendData"
+      :refresh="refreshShutdownTrend"
+    ></line-bar>
+    <line-bar
+      :id="planTrendId"
+      :option="planTrendData"
+      :refresh="refreshPlanTrend"
+    ></line-bar>
   </div>
 </template>
 
 <script>
 import "../../store/index";
-import { orderOverview } from "../../api/index";
+import { orderOverview, orderList } from "../../api/index";
 import DataView from "../../components/countData.vue";
 import VList from "../../components/list.vue";
 import LineBar from "../../components/lineBar.vue";
@@ -79,90 +95,47 @@ export default {
       cols: [
         {
           title: "生产线",
-          dataIndex: "productLine",
+          dataIndex: "lineName",
         },
         {
           title: "计划",
-          dataIndex: "plan",
+          dataIndex: "linePlannedOutput",
         },
         {
           title: "实际",
-          dataIndex: "actrual",
+          dataIndex: "lineActualOutput",
         },
         {
           title: "差异",
-          dataIndex: "diff",
+          dataIndex: "discrepancy",
         },
         {
           title: "不良数",
-          dataIndex: "badCount",
+          dataIndex: "poorEngineering",
         },
         {
           title: "不良率",
-          dataIndex: "badRate",
+          dataIndex: "defectiveRate",
+          rate: true,
         },
         {
           title: "停机时",
-          dataIndex: "shutdownCount",
+          dataIndex: "downTime",
         },
         {
           title: "停机率",
-          dataIndex: "shutdownRate",
+          dataIndex: "downTimeRate",
+          rate: true,
         },
       ],
       // 表格数据
-      list: [
-        {
-          productLine: "01线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          badRate: "3.9%",
-          shutdownCount: "22",
-          shutdownRate: "0.5%",
-        },
-        {
-          productLine: "02线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          badRate: "3.9%",
-          shutdownCount: "22",
-          shutdownRate: "0.5%",
-        },
-        {
-          productLine: "03线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          badRate: "3.9%",
-          shutdownCount: "22",
-          shutdownRate: "0.5%",
-        },
-        {
-          productLine: "04线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          badRate: "3.9%",
-          shutdownCount: "22",
-          shutdownRate: "0.5%",
-        },
-        {
-          productLine: "05线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          badRate: "3.9%",
-          shutdownCount: "22",
-          shutdownRate: "0.5%",
-        },
-      ],
+      list: [],
+      // 是否重新渲染日产量趋势图echarts
+      refreshDailyTrend: true,
+      // 是否重新渲染日产量趋势图echarts
+      refreshShutdownTrend: true,
+      // 是否重新渲染日产量趋势图echarts
+      refreshPlanTrend: true,
       // 日产量趋势图id
       dailyTrendId: "dailyTrend",
       // 日产量趋势图数据
@@ -188,19 +161,19 @@ export default {
           data: ["计划", "实际", "完成率"],
           right: 10,
         },
+        dataZoom: [
+          {
+            show: true,
+          },
+          {
+            type: "inside",
+            realtime: true,
+          },
+        ],
         xAxis: [
           {
             type: "category",
-            data: [
-              "01线",
-              "02线",
-              "03线",
-              "04线",
-              "05线",
-              "06线",
-              "07线",
-              "08线",
-            ],
+            data: [],
             axisPointer: {
               type: "shadow",
             },
@@ -210,9 +183,6 @@ export default {
           {
             type: "value",
             name: "数量",
-            min: 0,
-            max: 250,
-            interval: 50,
             axisLabel: {
               formatter: "{value}",
             },
@@ -220,9 +190,6 @@ export default {
           {
             type: "value",
             name: "完成率",
-            min: 0,
-            max: 25,
-            interval: 5,
             axisLabel: {
               formatter: "{value}%",
             },
@@ -232,18 +199,18 @@ export default {
           {
             name: "计划",
             type: "bar",
-            data: [2.0, 4.9, 7.0, 23.2, 25.6, 76.7, 135.6, 162.2],
+            data: [],
           },
           {
             name: "实际",
             type: "bar",
-            data: [2.6, 5.9, 9.0, 26.4, 28.7, 70.7, 175.6, 182.2],
+            data: [],
           },
           {
             name: "完成率",
             type: "line",
             yAxisIndex: 1,
-            data: [2.0, 2.2, 3.3, 4.5, 6.3, 10.2, 20.3, 23.4],
+            data: [],
           },
         ],
       },
@@ -272,19 +239,19 @@ export default {
           data: ["停机时间", "停机率"],
           right: 10,
         },
+        dataZoom: [
+          {
+            show: true,
+          },
+          {
+            type: "inside",
+            realtime: true,
+          },
+        ],
         xAxis: [
           {
             type: "category",
-            data: [
-              "01线",
-              "02线",
-              "03线",
-              "04线",
-              "05线",
-              "06线",
-              "07线",
-              "08线",
-            ],
+            data: [],
             axisPointer: {
               type: "shadow",
             },
@@ -294,9 +261,6 @@ export default {
           {
             type: "value",
             name: "分",
-            min: 0,
-            max: 250,
-            interval: 50,
             axisLabel: {
               formatter: "{value}",
             },
@@ -304,9 +268,6 @@ export default {
           {
             type: "value",
             name: "停机率",
-            min: 0,
-            max: 25,
-            interval: 5,
             axisLabel: {
               formatter: "{value}%",
             },
@@ -316,13 +277,13 @@ export default {
           {
             name: "停机时间",
             type: "bar",
-            data: [2.0, 4.9, 7.0, 23.2, 25.6, 76.7, 135.6, 162.2],
+            data: [],
           },
           {
             name: "停机率",
             type: "line",
             yAxisIndex: 1,
-            data: [2.0, 2.2, 3.3, 4.5, 6.3, 10.2, 20.3, 23.4],
+            data: [],
           },
         ],
       },
@@ -347,23 +308,23 @@ export default {
             },
           },
         },
+        dataZoom: [
+          {
+            show: true,
+          },
+          {
+            type: "inside",
+            realtime: true,
+          },
+        ],
         legend: {
-          data: ["定单数量", "变更数量", "变更率"],
+          data: ["定单条数", "变更数量", "变更率"],
           right: 10,
         },
         xAxis: [
           {
             type: "category",
-            data: [
-              "01线",
-              "02线",
-              "03线",
-              "04线",
-              "05线",
-              "06线",
-              "07线",
-              "08线",
-            ],
+            data: [],
             axisPointer: {
               type: "shadow",
             },
@@ -373,9 +334,6 @@ export default {
           {
             type: "value",
             name: "数量",
-            min: 0,
-            max: 250,
-            interval: 50,
             axisLabel: {
               formatter: "{value}",
             },
@@ -383,9 +341,6 @@ export default {
           {
             type: "value",
             name: "变更率",
-            min: 0,
-            max: 25,
-            interval: 5,
             axisLabel: {
               formatter: "{value}%",
             },
@@ -393,20 +348,20 @@ export default {
         ],
         series: [
           {
-            name: "定单数量",
+            name: "定单条数",
             type: "bar",
-            data: [2.0, 4.9, 7.0, 23.2, 25.6, 76.7, 135.6, 162.2],
+            data: [],
           },
           {
             name: "变更数量",
             type: "bar",
-            data: [2.6, 5.9, 9.0, 26.4, 28.7, 70.7, 175.6, 182.2],
+            data: [],
           },
           {
             name: "变更率",
             type: "line",
             yAxisIndex: 1,
-            data: [2.0, 2.2, 3.3, 4.5, 6.3, 10.2, 20.3, 23.4],
+            data: [],
           },
         ],
       },
@@ -414,18 +369,21 @@ export default {
   },
   created() {
     this.getOverview();
+    this.getList();
   },
   computed: {
     dateFlag() {
       return this.$store.state.selectDateFlag;
-    }
+    },
   },
   watch: {
     dateFlag() {
       this.getOverview();
+      this.getList();
     },
   },
   methods: {
+    // 获取概览数据
     getOverview() {
       orderOverview({
         factoryCode: "1007",
@@ -434,6 +392,60 @@ export default {
       }).then((res) => {
         this.overviewData = res.data.data;
       });
+    },
+    // 获取详情数据列表
+    getList() {
+      orderList({
+        factoryCode: "1007",
+        startDate: this.$store.state.startDate,
+        endDate: this.$store.state.endDate,
+      }).then((res) => {
+        this.list = res.data.data;
+        this.handleProduction();
+        this.handleShutdown();
+        this.handlePlan();
+      });
+    },
+    // 日产量趋势图数据处理
+    handleProduction() {
+      this.dailyTrendData.xAxis[0].data = [];
+      this.dailyTrendData.series.map((item) => (item.data = []));
+      this.list.map((item) => {
+        this.dailyTrendData.xAxis[0].data.push(item.lineName);
+        this.dailyTrendData.series[0].data.push(item.linePlannedOutput);
+        this.dailyTrendData.series[1].data.push(item.lineActualOutput);
+        this.dailyTrendData.series[2].data.push(
+          parseFloat(item.linePlannedOutput * 100).toFixed(2)
+        );
+      });
+      this.refreshDailyTrend = !this.refreshDailyTrend;
+    },
+    // 停机时趋势图数据处理
+    handleShutdown() {
+      this.shutdownTrendData.xAxis[0].data = [];
+      this.shutdownTrendData.series.map((item) => (item.data = []));
+      this.list.map((item) => {
+        this.shutdownTrendData.xAxis[0].data.push(item.lineName);
+        this.shutdownTrendData.series[0].data.push(item.downTime);
+        this.shutdownTrendData.series[1].data.push(
+          parseFloat(item.downTimeRate * 100).toFixed(2)
+        );
+      });
+      this.refreshShutdownTrend = !this.refreshShutdownTrend;
+    },
+    // 计划变更趋势图数据处理
+    handlePlan() {
+      this.planTrendData.xAxis[0].data = [];
+      this.planTrendData.series.map((item) => (item.data = []));
+      this.list.map((item) => {
+        this.planTrendData.xAxis[0].data.push(item.lineName);
+        this.planTrendData.series[0].data.push(item.plannedNumber);
+        this.planTrendData.series[1].data.push(item.plannedChangesNumber);
+        this.planTrendData.series[2].data.push(
+          parseFloat(item.changePlanRate * 100).toFixed(2)
+        );
+      });
+      this.refreshPlanTrend = !this.refreshPlanTrend;
     },
   },
 };

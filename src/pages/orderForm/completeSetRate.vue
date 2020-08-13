@@ -45,7 +45,7 @@
         </van-grid-item>
       </van-grid>
     </div>
-    <line-bar :id="completeSetRate" :option="completeSetRateData"></line-bar>
+    <line-bar :id="completeSetRate" :option="completeSetRateData" :refresh="refresh"></line-bar>
     <list-expand
       :title="title"
       :cols="cols"
@@ -56,6 +56,7 @@
 </template>
 
 <script>
+import { setRateTrend } from "../../api/index";
 import DataView from "../../components/countData.vue";
 import LineBar from "../../components/lineBar.vue";
 import ListExpand from "../../components/listExpand.vue";
@@ -69,134 +70,43 @@ export default {
       cols: [
         {
           title: "订单号",
-          dataIndex: "productLine",
-          width: '40%'
+          dataIndex: "lineName",
+          width: "40%",
         },
         {
           title: "计划",
-          dataIndex: "plan",
-          width: '15%'
+          dataIndex: "plannedNumber",
+          width: "15%",
         },
         {
           title: "齐套",
-          dataIndex: "actrual",
-          width: '15%'
+          dataIndex: "completedNumber",
+          width: "15%",
         },
         {
           title: "差异",
           dataIndex: "diff",
-          width: '15%'
+          width: "15%",
         },
         {
           title: "齐套率",
-          dataIndex: "badCount",
-          width: '15%'
+          dataIndex: "setRate",
+          width: "15%",
         },
       ],
       // 展开表格列
       expandCols: [
-        { dataIndex: "hours", width: "40%" },
+        { dataIndex: "orderNo", width: "40%" },
         { dataIndex: "plan", width: "15%" },
-        { dataIndex: "actrual", width: "15%" },
+        { dataIndex: "qtQua", width: "15%" },
         { dataIndex: "diff", width: "15%" },
-        { dataIndex: "UPH", width: "15%" },
+        { dataIndex: "qitaoPer", width: "15%" },
       ],
       // 表格数据
-      list: [
-        {
-          productLine: "01线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          expandData: [
-            {
-              hours: "08:00-09:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-            {
-              hours: "09:00-10:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-            {
-              hours: "10:00-11:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-          ],
-        },
-        {
-          productLine: "02线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          expandData: [
-            {
-              hours: "08:00-09:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-            {
-              hours: "09:00-10:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-            {
-              hours: "10:00-11:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-          ],
-        },
-        {
-          productLine: "03线",
-          plan: "300",
-          actrual: "315",
-          diff: "15",
-          badCount: "12",
-          expandData: [
-            {
-              hours: "08:00-09:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-            {
-              hours: "09:00-10:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-            {
-              hours: "10:00-11:00",
-              plan: "120",
-              actrual: "100",
-              diff: "20",
-              UPH: "260",
-            },
-          ],
-        },
-      ],
+      list: [],
       // 齐套率分析id
       completeSetRate: "completeSetRate",
-      // 定单条数清单率
+      // 齐套率分析
       completeSetRateData: {
         color: ["#1890ff", "#22d749", "#fa8355"],
         title: {
@@ -215,6 +125,15 @@ export default {
             },
           },
         },
+        dataZoom: [
+          {
+            show: true,
+          },
+          {
+            type: "inside",
+            realtime: true,
+          },
+        ],
         legend: {
           data: ["定单条数", "完成条数", "条数完成率"],
           right: 10,
@@ -222,14 +141,7 @@ export default {
         xAxis: [
           {
             type: "category",
-            data: [
-              "总装一线",
-              "总装二线",
-              "总装三线",
-              "总装四线",
-              "总装五线",
-              "总装六线",
-            ],
+            data: [],
             axisPointer: {
               type: "shadow",
             },
@@ -255,22 +167,58 @@ export default {
           {
             name: "定单条数",
             type: "bar",
-            data: [25, 40, 10, 16, 25, 5,],
+            data: [],
           },
           {
             name: "完成条数",
             type: "bar",
-            data: [26, 59, 90, 26, 28, 70,],
+            data: [],
           },
           {
             name: "完成率",
             type: "line",
             yAxisIndex: 1,
-            data: [2.0, 2.2, 3.3, 4.5, 6.3, 10.2,],
+            data: [],
           },
         ],
       },
+      // 时间查询标识
+      refresh: false
     };
+  },
+  computed: {
+    dateFlag() {
+      return this.$store.state.selectDateFlag;
+    },
+  },
+  watch: {
+    dateFlag() {
+      this.getSetRateTrend();
+    },
+  },
+  created() {
+    this.getSetRateTrend();
+  },
+  methods: {
+    getSetRateTrend() {
+      setRateTrend({
+        factoryCode: "1007",
+        startDate: this.$store.state.startDate,
+        endDate: this.$store.state.endDate,
+      }).then((res) => {
+        this.completeSetRateData.xAxis[0].data = [];
+        this.completeSetRateData.series.map((item) => (item.data = []));
+        res.data.data.map((item) => {
+          this.completeSetRateData.xAxis[0].data.push(item.lineName);
+          this.completeSetRateData.series[0].data.push(item.plannedNumber);
+          this.completeSetRateData.series[1].data.push(item.completedNumber);
+          this.completeSetRateData.series[2].data.push(
+            parseFloat(item.setrate * 100).toFixed(2)
+          );
+        });
+        this.refresh = !this.refresh;
+      });
+    },
   },
 };
 </script>

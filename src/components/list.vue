@@ -1,16 +1,17 @@
 <template>
   <div class="list">
     <h1>{{ title }}</h1>
-    <van-list>
+    <van-list v-if="list.length">
       <div class="thead">
         <div v-for="(item, index) in cols" :key="index">{{ item.title }}</div>
       </div>
       <div v-for="(item, index) in list" :key="index" class="tbody">
         <div v-for="(td, tdIndex) in cols" :key="tdIndex">
-          {{ item[td.dataIndex] }}
+          {{ td.rate ? `${parseFloat(item[td.dataIndex] * 100).toFixed(2)}%`: item[td.dataIndex] }}
         </div>
       </div>
     </van-list>
+    <div class="no-data" v-else>暂无数据</div>
   </div>
 </template>
 <script>
@@ -44,7 +45,7 @@ export default {
       display: table-row;
       div {
         display: table-cell;
-        padding: 8px 4px;
+        padding: 8px 3px;
         border-bottom: 1px solid;
       }
     }

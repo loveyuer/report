@@ -1,51 +1,56 @@
 <template>
   <div>
-    <!-- <header-TT></header-TT> -->
     <div class="data-view">
-      <van-grid :column-num="4" :gutter="10">
+      <van-grid :column-num="2" :gutter="25">
         <van-grid-item>
           <data-view
             :title="`当日计划`"
-            :count="`1800`"
+            :count="`${overviewData.factoryPlannedOutput}`"
             :countName="`昨日`"
             :percentName="`同比`"
-            :diff="+531"
-            :percent="+20"
+            :diff="overviewData.comparedToPlanYesterday"
+            :percent="overviewData.lastMonthPlanrate"
           ></data-view>
         </van-grid-item>
         <van-grid-item>
           <data-view
             :title="`当日完成`"
-            :count="`1700`"
+            :count="`${overviewData.factoryActualOutput}`"
             :countName="`差异`"
             :percentName="`完成率`"
-            :diff="-100"
-            :percent="-94"
+            :diff="overviewData.discrepancy"
+            :percent="
+              parseFloat(overviewData.completeRate * 100)
+            "
           ></data-view>
         </van-grid-item>
         <van-grid-item>
           <data-view
             :title="`工程不良`"
-            :count="`120`"
+            :count="`${overviewData.badSets}`"
             :countName="`昨日`"
             :percentName="`不良率`"
-            :diff="+20"
-            :percent="7"
+            :diff="overviewData.comparedToQualityYesterday"
+            :percent="
+              parseFloat(overviewData.defectiveRate * 100)
+            "
           ></data-view>
         </van-grid-item>
         <van-grid-item>
           <data-view
             :title="`停机率`"
-            :count="`3%`"
+            :count="
+              `${parseFloat(overviewData.downtimerate * 100).toFixed(2)}%`
+            "
             :countName="`昨日`"
             :percentName="`同比`"
-            :diff="+0.1"
-            :percent="-0.2"
+            :diff="overviewData.comparedToDowntimeYesterday"
+            :percent="overviewData.lastMonthDowntimerate"
           ></data-view>
         </van-grid-item>
       </van-grid>
     </div>
-    <line-bar :id="hourTrendId" :option="hourTrendData"></line-bar>
+    <line-bar :id="hourTrendId" :option="hourTrendData" :refresh="refresh"></line-bar>
     <list-expand
       :title="title"
       :cols="cols"
@@ -56,6 +61,7 @@
 </template>
 
 <script>
+import { orderOverview, hourProduction } from "../../api/index";
 import DataView from "../../components/countData.vue";
 import LineBar from "../../components/lineBar.vue";
 import ListExpand from "../../components/listExpand.vue";
@@ -63,6 +69,8 @@ export default {
   components: { DataView, LineBar, ListExpand },
   data() {
     return {
+      // 概览数据
+      overviewData: {},
       // 表格标题
       title: "生产小时日清列表",
       // 表格列
@@ -70,32 +78,32 @@ export default {
         {
           title: "产线",
           dataIndex: "productLine",
-          width: '16%'
+          width: "16%",
         },
         {
           title: "计划",
           dataIndex: "plan",
-          width: '16%'
+          width: "16%",
         },
         {
           title: "完成",
           dataIndex: "actrual",
-          width: '16%'
+          width: "16%",
         },
         {
           title: "差异",
           dataIndex: "diff",
-          width: '16%'
+          width: "16%",
         },
         {
           title: "UPH",
           dataIndex: "badCount",
-          width: '16%'
+          width: "16%",
         },
         {
           title: "直通率",
           dataIndex: "shutdownCount",
-          width: '16%'
+          width: "16%",
         },
       ],
       // 展开表格列
@@ -216,7 +224,7 @@ export default {
       hourTrendId: "hourTrend",
       // 日产量趋势图数据
       hourTrendData: {
-        color: ["#1890ff", "#22d749"],
+        color: ["#1890ff"],
         title: {
           text: "小时产量趋势图",
           textStyle: {
@@ -234,51 +242,23 @@ export default {
           },
         },
         legend: {
-          data: ["计划", "完成"],
+          data: ["产量"],
           right: 10,
         },
         dataZoom: [
           {
             show: true,
-            start: 32,
-            end: 40,
           },
           {
             type: "inside",
             realtime: true,
-            start: 32,
-            end: 40,
           },
         ],
         xAxis: [
           {
             type: "category",
-            data: [
-              "00:00-01:00",
-              "01:00-02:00",
-              "02:00-03:00",
-              "03:00-04:00",
-              "04:00-05:00",
-              "05:00-06:00",
-              "06:00-07:00",
-              "07:00-08:00",
-              "08:00-09:00",
-              "09:00-10:00",
-              "10:00-11:00",
-              "11:00-12:00",
-              "12:00-13:00",
-              "13:00-14:00",
-              "14:00-15:00",
-              "15:00-16:00",
-              "16:00-17:00",
-              "17:00-18:00",
-              "18:00-19:00",
-              "19:00-20:00",
-              "20:00-21:00",
-              "21:00-22:00",
-              "22:00-23:00",
-              "23:00-24:00",
-            ],
+            data: [],
+            name: '小时段',
             axisPointer: {
               type: "shadow",
             },
@@ -287,83 +267,66 @@ export default {
         yAxis: [
           {
             type: "value",
-            name: "计划",
+            name: "产量",
             axisLabel: {
               formatter: "{value}",
-            },
-          },
-          {
-            type: "value",
-            name: "完成",
-            axisLabel: {
-              formatter: "{value}%",
             },
           },
         ],
         series: [
           {
-            name: "计划",
+            name: "产量",
             type: "bar",
-            data: [
-              2.0,
-              4.9,
-              7.0,
-              23.2,
-              25.6,
-              76.7,
-              135.6,
-              162.2,
-              2.0,
-              4.9,
-              7.0,
-              23.2,
-              25.6,
-              76.7,
-              135.6,
-              162.2,
-              2.0,
-              4.9,
-              7.0,
-              23.2,
-              25.6,
-              76.7,
-              135.6,
-              162.2,
-            ],
-          },
-          {
-            name: "完成",
-            type: "bar",
-            data: [
-              2.6,
-              5.9,
-              9.0,
-              26.4,
-              28.7,
-              70.7,
-              175.6,
-              182.2,
-              2.6,
-              5.9,
-              9.0,
-              26.4,
-              28.7,
-              70.7,
-              175.6,
-              182.2,
-              2.6,
-              5.9,
-              9.0,
-              26.4,
-              28.7,
-              70.7,
-              175.6,
-              182.2,
-            ],
-          },
+            data: [],
+          },          
         ],
       },
+      // 时间查询标识
+      refresh: false
     };
+  },
+  computed: {
+    dateFlag() {
+      return this.$store.state.selectDateFlag;
+    },
+  },
+  created() {
+    this.getOverview();
+    this.getHour();
+  },
+  watch: {
+    dateFlag() {
+      this.getOverview();
+      this.getHour();
+    },
+  },
+  methods: {
+    // 获取概览数据
+    getOverview() {
+      orderOverview({
+        factoryCode: "1007",
+        startDate: this.$store.state.startDate,
+        endDate: this.$store.state.endDate,
+      }).then((res) => {
+        this.overviewData = res.data.data;
+      });
+    },
+    // 获取小时产量趋势图数据
+    getHour() {
+      hourProduction({
+        factoryCode: "1007",
+        startDate: this.$store.state.startDate,
+        endDate: this.$store.state.endDate,
+      }).then((res) => {
+        this.hourTrendData.xAxis[0].data = [];
+        this.hourTrendData.series.map((item) => (item.data = []));
+        res.data.data.map((item) => {
+          this.hourTrendData.xAxis[0].data.push(item.timeSlot);
+          this.hourTrendData.series[0].data.push(item.production);
+        });
+        this.refresh = !this.refresh;
+      });
+    },
   },
 };
 </script>

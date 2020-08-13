@@ -1,7 +1,7 @@
 <template>
   <div class="data-view">
     <p class="font12">{{ title }}</p>
-    <p class="bold font16">{{ count || "--" }}</p>
+    <p class="bold font16">{{ count !== "null" && count !== 'null%' ? count : "--" }}</p>
     <p class="left font12">
       {{ countName }}:
       <span class="font12" :class="diff > 0 ? 'red' : 'green'">{{ diff || "--" }}</span>
